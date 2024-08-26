@@ -6,7 +6,7 @@ const jsonschema = require("jsonschema");
 const express = require("express");
 
 const { BadRequestError } = require("../expressError");
-const { ensureLoggedIn } = require("../middleware/auth");
+const { ensureLoggedIn, ensureAdmin } = require("../middleware/auth");
 const Company = require("../models/company");
 
 const companyNewSchema = require("../schemas/companyNew.json");
@@ -14,17 +14,16 @@ const companyUpdateSchema = require("../schemas/companyUpdate.json");
 
 const router = new express.Router();
 
-
 /** POST / { company } =>  { company }
  *
  * company should be { handle, name, description, numEmployees, logoUrl }
  *
  * Returns { handle, name, description, numEmployees, logoUrl }
  *
- * Authorization required: login
+ * Authorization required: admin
  */
 
-router.post("/", ensureLoggedIn, async function (req, res, next) {
+router.post("/", ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, companyNewSchema);
     if (!validator.valid) {
@@ -50,24 +49,6 @@ router.post("/", ensureLoggedIn, async function (req, res, next) {
  * Authorization required: none
  */
 
-  router.get("/:handle", async function (req, res, next) {
-    try {
-      const company = await Company.get(req.params.handle);
-      return res.json({ company });
-    } catch (err) {
-      return next(err);
-    }
-  });
-  
-
-/** GET /[handle]  =>  { company }
- *
- *  Company is { handle, name, description, numEmployees, logoUrl, jobs }
- *   where jobs is [{ id, title, salary, equity }, ...]
- *
- * Authorization required: none
- */
-
 router.get("/", async function (req, res, next) {
   try {
     const { name, minEmployees, maxEmployees } = req.query;
@@ -83,6 +64,22 @@ router.get("/", async function (req, res, next) {
   }
 });
 
+/** GET /[handle]  =>  { company }
+ *
+ *  Company is { handle, name, description, numEmployees, logoUrl, jobs }
+ *   where jobs is [{ id, title, salary, equity }, ...]
+ *
+ * Authorization required: none
+ */
+
+router.get("/:handle", async function (req, res, next) {
+  try {
+    const company = await Company.get(req.params.handle);
+    return res.json({ company });
+  } catch (err) {
+    return next(err);
+  }
+});
 
 /** PATCH /[handle] { fld1, fld2, ... } => { company }
  *
@@ -92,10 +89,10 @@ router.get("/", async function (req, res, next) {
  *
  * Returns { handle, name, description, numEmployees, logo_url }
  *
- * Authorization required: login
+ * Authorization required: admin
  */
 
-router.patch("/:handle", ensureLoggedIn, async function (req, res, next) {
+router.patch("/:handle", ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, companyUpdateSchema);
     if (!validator.valid) {
@@ -112,10 +109,10 @@ router.patch("/:handle", ensureLoggedIn, async function (req, res, next) {
 
 /** DELETE /[handle]  =>  { deleted: handle }
  *
- * Authorization: login
+ * Authorization: admin
  */
 
-router.delete("/:handle", ensureLoggedIn, async function (req, res, next) {
+router.delete("/:handle", ensureAdmin, async function (req, res, next) {
   try {
     await Company.remove(req.params.handle);
     return res.json({ deleted: req.params.handle });
@@ -123,6 +120,5 @@ router.delete("/:handle", ensureLoggedIn, async function (req, res, next) {
     return next(err);
   }
 });
-
 
 module.exports = router;
