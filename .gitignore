@@ -1,0 +1,7 @@
+node_modules/
+jobly-schema.sql
+jobly-seed.sql
+jobly.sql
+package-lock.json
+readme.md
+
