@@ -6,16 +6,12 @@ const Company = require("../models/company");
 const Job = require("../models/job");
 const { createToken } = require("../helpers/tokens");
 
-let job1Id;
-let job2Id;
+const testJobIds = [];
 
 async function commonBeforeAll() {
-  // Delete all data from the tables
   await db.query("DELETE FROM users");
   await db.query("DELETE FROM companies");
-  await db.query("DELETE FROM jobs");
-
-  // Insert test companies
+  
   await Company.create({
     handle: "c1",
     name: "C1",
@@ -24,32 +20,8 @@ async function commonBeforeAll() {
     logoUrl: "http://c1.img",
   });
 
-  await Company.create({
-    handle: "c2",
-    name: "C2",
-    numEmployees: 2,
-    description: "Desc2",
-    logoUrl: "http://c2.img",
-  });
+  testJobIds[0] = (await Job.create({ title: "J1", salary: 1, equity: "0.1", companyHandle: "c1" })).id;
 
-  // Insert test jobs
-  const job1 = await Job.create({
-    title: "Job1",
-    salary: 50000,
-    equity: "0.1",
-    companyHandle: "c1",
-  });
-  job1Id = job1.id;
-
-  const job2 = await Job.create({
-    title: "Job2",
-    salary: 80000,
-    equity: "0",
-    companyHandle: "c2",
-  });
-  job2Id = job2.id;
-
-  // Insert test users
   await User.register({
     username: "u1",
     firstName: "U1F",
@@ -60,13 +32,32 @@ async function commonBeforeAll() {
   });
 
   await User.register({
-    username: "admin",
-    firstName: "Admin",
-    lastName: "User",
-    email: "admin@admin.com",
-    password: "adminpassword",
-    isAdmin: true,
+    username: "u2",
+    firstName: "U2F",
+    lastName: "U2L",
+    email: "user2@user.com",
+    password: "password2",
+    isAdmin: false,
   });
+  
+  await User.register({
+    username: "u3",
+    firstName: "U3F",
+    lastName: "U3L",
+    email: "user3@user.com",
+    password: "password3",
+    isAdmin: false,
+  });
+  
+  // Add a second job for testing the job application logic
+  testJobIds[1] = (await Job.create({
+    title: "J2",
+    salary: 2,
+    equity: "0.2",
+    companyHandle: "c1",
+  })).id;
+  
+  await User.applyToJob("u1", testJobIds[0]);
 }
 
 async function commonBeforeEach() {
@@ -89,12 +80,7 @@ module.exports = {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
+  testJobIds,
   u1Token,
   adminToken,
-  get job1Id() {
-    return job1Id;
-  },
-  get job2Id() {
-    return job2Id;
-  },
 };
